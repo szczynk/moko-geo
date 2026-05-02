@@ -17,6 +17,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
+import dev.icerock.moko.permissions.location.COARSE_LOCATION
 import dev.icerock.moko.permissions.location.LOCATION
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,7 +115,14 @@ actual class LocationTracker(
             azimuth = azimuth,
             speed = speed,
             altitude = altitude,
-            timestampMs = lastLocation.time
+            timestampMs = lastLocation.time,
+            isMock = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> lastLocation.isMock
+
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 -> lastLocation.isFromMockProvider
+
+                else -> false
+            },
         )
 
         trackerScope.launch {
@@ -124,8 +132,12 @@ actual class LocationTracker(
     }
 
     @SuppressLint("MissingPermission")
-    actual suspend fun startTracking() {
-        permissionsController.providePermission(Permission.LOCATION)
+    actual suspend fun startTracking(allowCoarseLocation: Boolean) {
+        val permission = when {
+            allowCoarseLocation -> Permission.COARSE_LOCATION
+            else -> Permission.LOCATION
+        }
+        permissionsController.providePermission(permission)
         // if permissions request failed - execution stops here
 
         isStarted = true

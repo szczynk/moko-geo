@@ -6,6 +6,7 @@ package dev.icerock.moko.geo
 
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
+import dev.icerock.moko.permissions.location.COARSE_LOCATION
 import dev.icerock.moko.permissions.location.LOCATION
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,8 +37,12 @@ actual class LocationTracker(
         desiredAccuracy = accuracy
     }
 
-    actual suspend fun startTracking() {
-        permissionsController.providePermission(Permission.LOCATION)
+    actual suspend fun startTracking(allowCoarseLocation: Boolean) {
+        val permission = when {
+            allowCoarseLocation -> Permission.COARSE_LOCATION
+            else -> Permission.LOCATION
+        }
+        permissionsController.providePermission(permission)
         // if permissions request failed - execution stops here
 
         locationManager.startUpdatingLocation()
